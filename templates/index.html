@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestion des échanges de biens</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>Bienvenue sur l'application de gestion des échanges de biens</h1>
+    
+    <h2>Importer une liste d'articles</h2>
+    <form action="/import_csv" method="post" enctype="multipart/form-data">
+        <input type="file" name="file">
+        <input type="submit" value="Importer">
+    </form>
+    
+    <h2>Ajouter un article</h2>
+    <form action="/add_article" method="post">
+        <label for="nom">Nom:</label><br>
+        <input type="text" id="nom" name="nom"><br>
+        <label for="nomenclature">Nomenclature:</label><br>
+        <input type="text" id="nomenclature" name="nomenclature"><br>
+        <input type="submit" value="Ajouter">
+    </form>
+    
+    <h2>Ajouter une facture</h2>
+    <form action="/add_facture" method="post">
+        <label for="date">Date:</label><br>
+        <input type="text" id="date" name="date"><br>
+        
+        <label for="fournisseur_search">Chercher un fournisseur:</label><br>
+        <input type="text" id="fournisseur_search" name="fournisseur_search" onkeyup="searchFournisseur()"><br>
+        
+        <label for="fournisseur">Fournisseur:</label><br>
+        <input type="text" id="fournisseur" name="fournisseur" onchange="updateFournisseurInfo()"><br>
+        
+        <label for="article_search">Chercher un article:</label><br>
+        <input type="text" id="article_search" name="article_search" onkeyup="searchArticle()"><br>
+        
+        <label for="article_id">Article:</label><br>
+        <select id="article_id" name="article_id" onchange="updateNomenclature()">
+            <option value="">Sélectionner un article</option>
+            {% for article in articles %}
+                <option value="{{ article[0] }}">{{ article[1] }}</option>
+            {% endfor %}
+        </select><br>
+        
+        <label for="quantite">Quantité:</label><br>
+        <input type="text" id="quantite" name="quantite"><br>
+        <label for="montant_ht">Montant HT:</label><br>
+        <input type="text" id="montant_ht" name="montant_ht"><br>
+        <label for="nc8">Nomenclature (NC8):</label><br>
+        <input type="text" id="nc8" name="nc8" readonly><br>
+        <label for="ngp9">NGP9:</label><br>
+        <input type="text" id="ngp9" name="ngp9"><br>
+        <label for="pays_origine">Pays d'origine:</label><br>
+        <input type="text" id="pays_origine" name="pays_origine"><br>
+        <label for="valeur">Valeur:</label><br>
+        <input type="text" id="valeur" name="valeur"><br>
+        <label for="regime">Régime:</label><br>
+        <input type="text" id="regime" name="regime"><br>
+        <label for="masse_nette">Masse nette:</label><br>
+        <input type="text" id="masse_nette" name="masse_nette"><br>
+        <label for="unites_suppl">Unités supplémentaires:</label><br>
+        <input type="text" id="unites_suppl" name="unites_suppl"><br>
+        <label for="nature_transaction_a">Nature de la transaction A:</label><br>
+        <input type="text" id="nature_transaction_a" name="nature_transaction_a"><br>
+        <label for="nature_transaction_b">Nature de la transaction B:</label><br>
+        <input type="text" id="nature_transaction_b" name="nature_transaction_b"><br>
+        <label for="mode_transport">Mode de transport:</label><br>
+        <input type="text" id="mode_transport" name="mode_transport"><br>
+        <label for="departement">Département:</label><br>
+        <input type="text" id="departement" name="departement"><br>
+        <label for="pays_provenance">Pays de provenance:</label><br>
+        <input type="text" id="pays_provenance" name="pays_provenance"><br>
+        <label for="code_tva">Code TVA partenaire étranger:</label><br>
+        <input type="text" id="code_tva" name="code_tva"><br>
+        <label for="reference_interne">Référence interne:</label><br>
+        <input type="text" id="reference_interne" name="reference_interne"><br>
+        <input type="submit" value="Ajouter">
+    </form>
+    
+    <h2>Exporter les données</h2>
+    <form action="/generate_csv" method="get">
+        <input type="submit" value="Générer le fichier CSV">
+    </form>
+
+    <script>
+        function searchArticle() {
+            const query = document.getElementById('article_search').value;
+            fetch(`/search_article?query=${query}`)
+                .then(response => response.json())
+                .then(data => {
+                    const articleSelect = document.getElementById('article_id');
+                    articleSelect.innerHTML = '<option value="">Sélectionner un article</option>';
+                    data.forEach(article => {
+                        const option = document.createElement('option');
+                        option.value = article[0];
+                        option.text = article[1];
+                        articleSelect.add(option);
+                    });
+                });
+        }
+
+        function updateNomenclature() {
+            const articleSelect = document.getElementById('article_id');
+            const selectedOption = articleSelect.options[articleSelect.selectedIndex];
+            if (selectedOption.value) {
+                fetch(`/search_article?query=${selectedOption.text}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.length > 0) {
+                            document.getElementById('nc8').value = data[0][2];
+                        }
+                    });
+            }
+        }
+
+        function searchFournisseur() {
+            const query = document.getElementById('fournisseur_search').value;
+            fetch(`/search_fournisseur?query=${query}`)
+                .then(response => response.json())
+                .then(data => {
+                    const fournisseurSelect = document.getElementById('fournisseur');
+                    fournisseurSelect.innerHTML = '';
+                    data.forEach(fournisseur => {
+                        const option = document.createElement('option');
+                        option.value = fournisseur[1];
+                        option.text = fournisseur[1];
+                        fournisseurSelect.add(option);
+                    });
+                });
+        }
+
+        function updateFournisseurInfo() {
+            const fournisseur = document.getElementById('fournisseur').value;
+            if (fournisseur) {
+                fetch(`/search_fournisseur?query=${fournisseur}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.length > 0) {
+                            document.getElementById('pays_origine').value = data[0][2];
+                            document.getElementById('nature_transaction_a').value = data[0][3];
+                        }
+                    });
+            }
+        }
+    </script>
+</body>
+</html>
